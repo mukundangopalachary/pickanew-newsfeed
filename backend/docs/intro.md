@@ -27,7 +27,7 @@
 - Set up Docker Compose with PostgreSQL, Redis, Kafka, Zookeeper, NGINX
 - Verify all services start and connect
 
-### Phase 2 — Database Schema
+### Phase 2 — Database Schema (completed)
 
 - Write Flyway migrations for all tables
 - Verify schema with `\dt` in psql
