@@ -13,3 +13,6 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  security:
+    user:
+      password: 12321
