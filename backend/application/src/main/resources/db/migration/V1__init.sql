@@ -4,9 +4,11 @@ CREATE TABLE users (
     id            BIGSERIAL PRIMARY KEY,
     name          VARCHAR(100)  NOT NULL,
     email         VARCHAR(255)  NOT NULL UNIQUE,
-    password_hash VARCHAR(255)  NOT NULL,
-    role          VARCHAR(20)   NOT NULL DEFAULT 'USER',
-    joined_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+    password_hash VARCHAR(255),
+    role          VARCHAR(20)   NOT NULL,
+    provider      VARCHAR(20)   NOT NULL,
+    joined_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    enabled       BOOLEAN       NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE topics (

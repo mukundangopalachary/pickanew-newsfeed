@@ -8,5 +8,11 @@ import app.news.backend.model.User;
 // Basic
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+  boolean existsByUsername(String username);
 
+  boolean existsByEmail(String username);
+
+  User findByUsername(String username);
+
+  User findByEmail(String email);
 }
