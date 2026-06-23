@@ -9,7 +9,7 @@ import app.news.backend.model.User;
 import app.news.backend.repository.UserRepository;
 
 @Service
-public class CustomerUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService {
 
   @Autowired
   private UserRepository repository;

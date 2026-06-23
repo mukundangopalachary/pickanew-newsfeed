@@ -1,53 +1,60 @@
 package app.news.backend.config;
 
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import app.news.backend.security.CustomUserDetailsService;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 public class SecurityConfig {
 
   @Autowired
   private JwtFilter jwtFilter;
 
+  @Autowired
+  private CustomUserDetailsService userDetailsService;
+
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.authorizeHttpRequests(
-        (authorize) -> authorize
-            .requestMatchers("api/v1/register", "api/v1/login")
-            .permitAll()
+    http
+        .authorizeHttpRequests(authorize -> authorize
+            .requestMatchers("/api/v1/auth/**").permitAll()
             .anyRequest().authenticated())
-        .csrf((csrf) -> csrf.disable())
-        .httpBasic(Customizer.withDefaults())
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-        .formLogin(Customizer.withDefaults())
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
-
+        .csrf(csrf -> csrf.disable())
+        .httpBasic(basic -> basic.disable())
+        .formLogin(form -> form.disable())
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authenticationProvider(authProvider())
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 
+  @Bean
+  AuthenticationProvider authProvider() {
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+    provider.setPasswordEncoder(passwordEncoder());
+    return provider;
+  }
+
+  @Bean
+  AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    return config.getAuthenticationManager();
+  }
+
+  @Bean
+  PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 }
-/*
- * Caused by: org.springframework.beans.factory.BeanCreationException: Error
- * creating bean with name 'securityFilterChain' defined in class path resource
- * [app/news/backend/config/SecurityConfig.class]: Failed to instantiate
- * [org.springframework.security.web.SecurityFilterChain]: Factory method
- * 'securityFilterChain' threw exception with message: pattern must start with a
- * /
- * at org.springframework.beans.factory.support.ConstructorResolver.instantiate(
- * ConstructorResolver.java:657)
- * at org.springframework.beans.factory.support.ConstructorResolver.
- * instantiateUsingFactoryMethod(ConstructorResolver.java:645)
- * at
- * org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.
- * instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1360)
- * at
- * org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.
- * createBeanInstance(AbstractAutowireCapableBeanFactory.java:1192)
- */
