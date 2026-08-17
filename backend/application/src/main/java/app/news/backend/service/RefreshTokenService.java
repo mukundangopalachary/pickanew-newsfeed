@@ -22,7 +22,7 @@ public class RefreshTokenService {
   private static final int TOKEN_LENGTH = 64;
 
   @Autowired private RefreshTokenRepository refreshTokenRepository;
-  @Autowired private UserRepository userRepository;
+  // @Autowired private UserRepository userRepository;
 
   public RefreshToken verifyRefreshToken(String refreshToken) {
     Optional<RefreshToken> opt = refreshTokenRepository.findByToken(refreshToken);
