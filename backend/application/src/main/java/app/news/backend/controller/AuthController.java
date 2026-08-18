@@ -6,16 +6,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.news.backend.dto.request.LoginRequest;
+import app.news.backend.dto.request.RefreshTokenRequest;
 import app.news.backend.dto.request.RegisterRequest;
 import app.news.backend.dto.response.AuthResponse;
 import app.news.backend.dto.response.UserResponse;
+import app.news.backend.model.RefreshToken;
 import app.news.backend.model.User;
+import app.news.backend.security.CustomUserDetailsService;
 import app.news.backend.security.JwtService;
 import app.news.backend.security.UserPrincipal;
 import app.news.backend.service.AuthService;
@@ -31,6 +35,8 @@ public class AuthController {
   @Autowired AuthService authService;
 
   @Autowired JwtService jwtService;
+
+  @Autowired CustomUserDetailsService userDetailsService;
 
   @PostMapping("/register")
   public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest, HttpServletResponse response) throws BadCredentialsException{
@@ -72,6 +78,25 @@ public class AuthController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Wrong Username or Password");
     }
     
+  }
 
+
+  // request comes from frontend when status => 401 on expiry of jwt and refreshToken(expiredOrNot)
+  @PostMapping("/refresh")
+  public ResponseEntity<?> refresh(HttpServletResponse response, @CookieValue("refreshToken") String refreshToken){
+    RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken);
+    User user = newRefreshToken.getUser();
+
+    UserPrincipal principal = (UserPrincipal) userDetailsService.loadUserByUsername(user.getEmail());
+  
+    String jwt = jwtService.generateToken(principal);
+
+    authService.setJwtCookie(response, jwt);
+    authService.setRefreshTokenCookie(
+        response,
+        newRefreshToken.getToken()
+    );
+    
+    return ResponseEntity.ok("Token Refreshed");
   }
 }

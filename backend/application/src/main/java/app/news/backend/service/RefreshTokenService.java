@@ -5,7 +5,6 @@ import app.news.backend.exception.TokenNotFoundException;
 import app.news.backend.model.RefreshToken;
 import app.news.backend.model.User;
 import app.news.backend.repository.RefreshTokenRepository;
-import app.news.backend.repository.UserRepository;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Base64;
@@ -27,7 +26,7 @@ public class RefreshTokenService {
   public RefreshToken verifyRefreshToken(String refreshToken) {
     Optional<RefreshToken> opt = refreshTokenRepository.findByToken(refreshToken);
 
-    RefreshToken token = opt.orElseThrow(() -> new IllegalArgumentException("Token is not found"));
+    RefreshToken token = opt.orElseThrow(() -> new TokenNotFoundException("Token is not found"));
 
     boolean revoked = token.isRevoked();
 
@@ -67,7 +66,6 @@ public class RefreshTokenService {
     existing.setRevoked(true);
 
     RefreshToken newToken = createRefreshToken(existing.getUser());
-    refreshTokenRepository.save(newToken);
     return newToken;
   }
 

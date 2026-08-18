@@ -46,11 +46,11 @@ public class User {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private Role role;
+  private Role role = Role.USER;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private AuthProvider provider;
+  private AuthProvider provider = AuthProvider.LOCAL;
 
   @Column(name = "joined_at", nullable = false, updatable = false)
   @CreationTimestamp
