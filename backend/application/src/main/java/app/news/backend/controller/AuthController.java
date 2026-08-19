@@ -17,12 +17,14 @@ import app.news.backend.dto.request.RefreshTokenRequest;
 import app.news.backend.dto.request.RegisterRequest;
 import app.news.backend.dto.response.AuthResponse;
 import app.news.backend.dto.response.UserResponse;
+import app.news.backend.exception.UserAlreadyExistsException;
 import app.news.backend.model.RefreshToken;
 import app.news.backend.model.User;
 import app.news.backend.security.CustomUserDetailsService;
 import app.news.backend.security.JwtService;
 import app.news.backend.security.UserPrincipal;
 import app.news.backend.service.AuthService;
+import app.news.backend.service.CookieService;
 import app.news.backend.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -34,6 +36,8 @@ public class AuthController {
 
   @Autowired AuthService authService;
 
+  @Autowired CookieService cookieService;
+
   @Autowired JwtService jwtService;
 
   @Autowired CustomUserDetailsService userDetailsService;
@@ -42,6 +46,7 @@ public class AuthController {
   public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest, HttpServletResponse response) throws BadCredentialsException{
     
     User user = authService.save(registerRequest);
+    
     LoginRequest req = new LoginRequest(user.getUsername(), user.getEmail(), registerRequest.password());
     Authentication authentication = authService.verify(req);
 
@@ -50,10 +55,10 @@ public class AuthController {
     String jwt = jwtService.generateToken(principal);
     String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
 
-    authService.setJwtCookie(response, jwt);
-    authService.setRefreshTokenCookie(response, refreshToken);
+    cookieService.setJwtCookie(response, jwt);
+    cookieService.setRefreshTokenCookie(response, refreshToken);
 
-    return ResponseEntity.status(HttpStatus.OK).body("Registration Successful!");
+    return ResponseEntity.status(HttpStatus.CREATED).body("Registration Successful!");
   }
 
   @PostMapping("/login")
@@ -69,8 +74,8 @@ public class AuthController {
       String jwt = jwtService.generateToken(principal);
       String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
 
-      authService.setJwtCookie(response, jwt);
-      authService.setRefreshTokenCookie(response, refreshToken);
+      cookieService.setJwtCookie(response, jwt);
+      cookieService.setRefreshTokenCookie(response, refreshToken);
 
       return ResponseEntity.ok(new AuthResponse(new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole().toString(), user.getProvider().toString()) , "Login successful"));
 
@@ -91,8 +96,8 @@ public class AuthController {
   
     String jwt = jwtService.generateToken(principal);
 
-    authService.setJwtCookie(response, jwt);
-    authService.setRefreshTokenCookie(
+    cookieService.setJwtCookie(response, jwt);
+    cookieService.setRefreshTokenCookie(
         response,
         newRefreshToken.getToken()
     );

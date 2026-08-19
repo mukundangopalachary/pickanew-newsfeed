@@ -2,17 +2,15 @@ package app.news.backend.service;
 
 import app.news.backend.dto.request.LoginRequest;
 import app.news.backend.dto.request.RegisterRequest;
+import app.news.backend.exception.UserAlreadyExistsException;
 import app.news.backend.model.User;
 import app.news.backend.repository.UserRepository;
-import jakarta.servlet.http.HttpServletResponse;
-
-import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,7 +26,8 @@ public class AuthService {
   @Autowired private AuthenticationManager authManager;
 
   //SAVE NEW USER
-  public User save(RegisterRequest request) {
+  public User save(RegisterRequest request) throws UserAlreadyExistsException{
+    if(userRepository.existsByEmail(request.email())) throw new UserAlreadyExistsException("Email already exists!");
     String name = request.name();
     String password = encoder.encode(request.password());
     String email = request.email();
@@ -42,45 +41,19 @@ public class AuthService {
   }
 
   //VERIFY USER LOGIN
-  public Authentication verify(LoginRequest user) throws BadCredentialsException{
+  public Authentication verify(LoginRequest user) throws BadCredentialsException, DisabledException, LockedException{
     try {
       Authentication authentication =
           authManager.authenticate(
               new UsernamePasswordAuthenticationToken(user.name(), user.password()));
       return authentication;
     } catch (BadCredentialsException e) {
-      throw e;
+      throw new BadCredentialsException("Email or Password is Wrong", e);
+    } catch (DisabledException e){
+      throw new DisabledException("User is disabled", e);
+    }catch (LockedException e){
+      throw new LockedException("User account is locked", e);
     }
   }
 
-  public void setRefreshTokenCookie(HttpServletResponse response, String token) {
-    ResponseCookie cookie =
-      ResponseCookie.from("refreshToken", token)
-            .httpOnly(true)
-            .secure(true)
-            .sameSite("Lax")
-            .path("/api/v1/auth/refresh")
-            .maxAge(Duration.ofDays(30))
-            .build();
-
-    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-  }
-
-  
-
-public void setJwtCookie(HttpServletResponse response, String token) {
-
-    ResponseCookie cookie =
-        ResponseCookie.from("jwt", token)
-            .httpOnly(true)
-            .secure(true) // not necessary for development
-            .sameSite("Lax")
-            .path("/")
-            .maxAge(Duration.ofDays(1))
-            .build();
-
-    System.out.println(cookie.toString());
-
-    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-  }
 }

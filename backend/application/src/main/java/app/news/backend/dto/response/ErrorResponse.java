@@ -1,10 +1,10 @@
 package app.news.backend.dto.response;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 public record ErrorResponse(
     int status,
     String error,
     String message,
-    OffsetDateTime timestamp) {
+    Instant timestamp) {
 }
