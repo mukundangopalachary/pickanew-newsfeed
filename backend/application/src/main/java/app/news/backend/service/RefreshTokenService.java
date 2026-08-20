@@ -1,19 +1,21 @@
 package app.news.backend.service;
 
-import app.news.backend.exception.TokenExpiredException;
-import app.news.backend.exception.TokenNotFoundException;
-import app.news.backend.model.RefreshToken;
-import app.news.backend.model.User;
-import app.news.backend.repository.RefreshTokenRepository;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import app.news.backend.exception.TokenExpiredException;
+import app.news.backend.exception.TokenNotFoundException;
+import app.news.backend.model.RefreshToken;
+import app.news.backend.model.User;
+import app.news.backend.repository.RefreshTokenRepository;
 
 @Service
 public class RefreshTokenService {
@@ -78,6 +80,20 @@ public class RefreshTokenService {
 
     refreshToken.setRevoked(true);
     return refreshToken;
+  }
+
+  @Transactional
+  public void revokeIfExists(String token) {
+
+    if (token == null) {
+        return;
+    }
+
+    refreshTokenRepository
+        .findByToken(token)
+        .ifPresent(refreshToken -> {
+            refreshToken.setRevoked(true);
+        });
   }
 
   @Transactional

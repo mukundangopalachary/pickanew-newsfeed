@@ -16,7 +16,7 @@ public class CookieService {
             .httpOnly(true)
             .secure(true)
             .sameSite("Lax")
-            .path("/api/v1/auth/refresh")
+            .path("/api/v1/auth/")
             .maxAge(Duration.ofDays(30))
             .build();
 
@@ -25,8 +25,7 @@ public class CookieService {
 
   
 
-public void setJwtCookie(HttpServletResponse response, String token) {
-
+  public void setJwtCookie(HttpServletResponse response, String token) {
     ResponseCookie cookie =
         ResponseCookie.from("jwt", token)
             .httpOnly(true)
@@ -36,7 +35,31 @@ public void setJwtCookie(HttpServletResponse response, String token) {
             .maxAge(Duration.ofDays(1))
             .build();
 
-    System.out.println(cookie.toString());
+
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+  }
+
+  public void clearJwtCookie(HttpServletResponse response){
+    ResponseCookie cookie = ResponseCookie.from("jwt", "")
+      .httpOnly(true)
+      .secure(true)
+      .sameSite("Lax")
+      .path("/")
+      .maxAge(Duration.ZERO)
+      .build();
+
+    response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+  }
+
+  public void clearRefreshTokenCookie(HttpServletResponse response){
+    ResponseCookie cookie =
+      ResponseCookie.from("refreshToken", "")
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("Lax")
+            .path("/api/v1/auth/")
+            .maxAge(Duration.ZERO)
+            .build();
 
     response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
   }

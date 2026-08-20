@@ -3,7 +3,6 @@ package app.news.backend.config;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +12,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import app.news.backend.security.CustomUserDetailsService;
 import app.news.backend.security.JwtService;
+import app.news.backend.service.TokenRevocationService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -22,53 +23,131 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-  @Autowired
-  private JwtService jwtService;
+    @Autowired
+    private JwtService jwtService;
 
-  @Autowired
-  private ApplicationContext context;
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
 
-  @Override
-  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
+    @Autowired
+    private TokenRevocationService tokenRevocationService;
 
-    String path = request.getRequestURI();
-    if (path.equals("/api/v1/login") || path.equals("/api/v1/register") || path.equals("/csrf-token")) {
-      filterChain.doFilter(request, response);
-      return;
-    }
-    String authHeader = request.getHeader("Authorization");
-    String token = null;
-    String email = null;
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-    if (authHeader != null && authHeader.startsWith("Bearer ")) {
-      token = authHeader.substring(7);
-      email = jwtService.extractUsername(token);
-    }
+        String jwt = extractJwtFromCookie(request);
 
-    if (token == null && request.getCookies() != null) {
-      for (Cookie cookie : request.getCookies()) {
-        if ("jwt".equals(cookie.getName())) {
-          token = cookie.getValue();
-          email = jwtService.extractUsername(token);
-          break;
+        /*
+         * No JWT means this request is simply unauthenticated.
+         *
+         * SecurityConfig will decide whether the endpoint is public
+         * or requires authentication.
+         */
+        if (jwt == null) {
+            filterChain.doFilter(request, response);
+            return;
         }
-      }
+
+        /*
+         * Don't overwrite an Authentication that has already been
+         * established by another authentication mechanism.
+         */
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
+            String email = jwtService.extractUsername(jwt);
+
+            if (email == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            /*
+             * Load the current user from the database.
+             */
+            UserDetails userDetails =
+                    userDetailsService.loadUserByUsername(email);
+
+            /*
+             * Validate:
+             * 1. Signature
+             * 2. Expiration
+             * 3. Token/user relationship
+             */
+            if (!jwtService.validateToken(jwt, userDetails)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            /*
+             * Even if the JWT is cryptographically valid,
+             * it may have been explicitly revoked during logout.
+             */
+            String jti = jwtService.extractJti(jwt);
+
+            if (tokenRevocationService.isRevoked(jti)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            /*
+             * JWT is valid and not revoked.
+             *
+             * Create Spring Security's Authentication object.
+             */
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
+
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource()
+                            .buildDetails(request));
+
+            /*
+             * This is what makes the current request authenticated.
+             */
+            SecurityContextHolder
+                    .getContext()
+                    .setAuthentication(authentication);
+
+        } catch (JwtException | IllegalArgumentException e) {
+
+            /*
+             * Invalid/expired JWT should NOT become a 500.
+             *
+             * We simply don't authenticate this request.
+             * If the endpoint is protected, Spring Security will
+             * subsequently return 401.
+             */
+            SecurityContextHolder.clearContext();
+        }
+
+        filterChain.doFilter(request, response);
     }
 
-    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      UserDetails userDetails = context.getBean(CustomUserDetailsService.class).loadUserByUsername(email);
+    private String extractJwtFromCookie(HttpServletRequest request) {
 
-      if (jwtService.validateToken(token, userDetails)) {
-        UsernamePasswordAuthenticationToken token_auth = new UsernamePasswordAuthenticationToken(userDetails, null,
-            userDetails.getAuthorities());
-        token_auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder.getContext().setAuthentication(token_auth);
-      }
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
+            return null;
+        }
+
+        for (Cookie cookie : cookies) {
+            if ("jwt".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
-
-    filterChain.doFilter(request, response);
-
-  }
-
 }

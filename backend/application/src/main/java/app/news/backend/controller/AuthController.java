@@ -13,11 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.news.backend.dto.request.LoginRequest;
-import app.news.backend.dto.request.RefreshTokenRequest;
 import app.news.backend.dto.request.RegisterRequest;
 import app.news.backend.dto.response.AuthResponse;
 import app.news.backend.dto.response.UserResponse;
-import app.news.backend.exception.UserAlreadyExistsException;
 import app.news.backend.model.RefreshToken;
 import app.news.backend.model.User;
 import app.news.backend.security.CustomUserDetailsService;
@@ -26,6 +24,7 @@ import app.news.backend.security.UserPrincipal;
 import app.news.backend.service.AuthService;
 import app.news.backend.service.CookieService;
 import app.news.backend.service.RefreshTokenService;
+import app.news.backend.service.TokenRevocationService;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
@@ -39,6 +38,9 @@ public class AuthController {
   @Autowired CookieService cookieService;
 
   @Autowired JwtService jwtService;
+
+  @Autowired
+  TokenRevocationService tokenRevocationService;
 
   @Autowired CustomUserDetailsService userDetailsService;
 
@@ -103,5 +105,18 @@ public class AuthController {
     );
     
     return ResponseEntity.ok("Token Refreshed");
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<?> logout(HttpServletResponse response, @CookieValue("jwt") String jwtToken, @CookieValue("refreshToken") String refreshToken){
+    
+    if(jwtToken != null)tokenRevocationService.revokeJwt(jwtToken);
+
+    refreshTokenService.revokeIfExists(refreshToken);
+
+    cookieService.clearJwtCookie(response);
+    cookieService.clearRefreshTokenCookie(response);
+
+    return ResponseEntity.noContent().build();
   }
 }
