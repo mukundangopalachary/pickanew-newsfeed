@@ -4,9 +4,11 @@ import java.time.Duration;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletResponse;
 
+@Service
 public class CookieService {
   public void setRefreshTokenCookie(HttpServletResponse response, String token) {
     ResponseCookie cookie =
