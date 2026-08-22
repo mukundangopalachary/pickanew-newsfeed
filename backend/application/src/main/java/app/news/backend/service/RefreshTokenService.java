@@ -1,21 +1,19 @@
 package app.news.backend.service;
 
-import java.security.SecureRandom;
-import java.time.OffsetDateTime;
-import java.util.Base64;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import app.news.backend.exception.TokenExpiredException;
 import app.news.backend.exception.TokenNotFoundException;
 import app.news.backend.model.RefreshToken;
 import app.news.backend.model.User;
 import app.news.backend.repository.RefreshTokenRepository;
+import java.security.SecureRandom;
+import java.time.OffsetDateTime;
+import java.util.Base64;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RefreshTokenService {
@@ -23,6 +21,7 @@ public class RefreshTokenService {
   private static final int TOKEN_LENGTH = 64;
 
   @Autowired private RefreshTokenRepository refreshTokenRepository;
+
   // @Autowired private UserRepository userRepository;
 
   public RefreshToken verifyRefreshToken(String refreshToken) {
@@ -53,6 +52,7 @@ public class RefreshTokenService {
 
     refreshToken.setExpiresAt(now.plusDays(30));
 
+    // CSPRNG
     byte[] bytes = new byte[TOKEN_LENGTH];
     secureRandom.nextBytes(bytes);
 
@@ -86,14 +86,15 @@ public class RefreshTokenService {
   public void revokeIfExists(String token) {
 
     if (token == null) {
-        return;
+      return;
     }
 
     refreshTokenRepository
         .findByToken(token)
-        .ifPresent(refreshToken -> {
-            refreshToken.setRevoked(true);
-        });
+        .ifPresent(
+            refreshToken -> {
+              refreshToken.setRevoked(true);
+            });
   }
 
   @Transactional
