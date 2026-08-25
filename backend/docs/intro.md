@@ -18,11 +18,11 @@
 - `User` entity finalized (OAuth + local support)
 - `AuthProvider` enum (LOCAL, GOOGLE)
 - `Role` enum
-- [ ] `POST /api/auth/register` — local signup
-- [ ] `POST /api/auth/login` — returns JWT
+- [x] `POST /api/auth/register` — local signup
+- [x] `POST /api/auth/login` — returns JWT in httpOnly Cookie
 - [ ] Google OAuth2 login flow
-- [ ] JWT filter — validate token on protected routes
-- [ ] Spring Security config — public vs protected routes
+- [x] JWT filter — validate token on protected routes
+- [x] Spring Security config — public vs protected routes
 - [ ] Next.js — login/register pages, Google login button, store JWT in httpOnly cookie
 
 ### Phase 4 — Topics + Subscriptions
