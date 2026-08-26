@@ -31,12 +31,12 @@ public class ArticleLikes {
   @ManyToOne(fetch = FetchType.LAZY)
   @MapsId("articleId")
   @JoinColumn(name = "article_id", nullable = false)
-  private Article articleId;
+  private Article article;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @MapsId("userID")
   @JoinColumn(name = "user_id", nullable = false)
-  private User userId;
+  private User user;
 
   @Column(name = "created_at", nullable = false)
   @CreationTimestamp
