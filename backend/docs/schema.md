@@ -33,11 +33,11 @@ CREATE TABLE topics (
 ```sql
 CREATE TABLE articles (
     id          BIGSERIAL PRIMARY KEY,
-    title       VARCHAR(500) NOT NULL,
+    title       VARCHAR(100) NOT NULL,
     description TEXT,
     content     TEXT,
     source_url  TEXT         NOT NULL UNIQUE,
-    likes       BIGINT       NOT NULL DEFAULT 0,
+    -- likes       BIGINT       NOT NULL DEFAULT 0,
     expires_at  TIMESTAMPTZ,
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
