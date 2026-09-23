@@ -1,5 +1,10 @@
 package app.news.backend.model;
 
+import java.time.OffsetDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -28,4 +33,10 @@ public class UserTopic {
   @MapsId("topicId")
   @JoinColumn(name = "topic_id", nullable = false)
   private Topic topic;
+
+  @Column(name = "subscribed_at", nullable = false)
+  private OffsetDateTime subscribedAt;
+
+  @Column(name = "subscribed", nullable = false)
+  private boolean subscribed = true;
 }
